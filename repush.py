@@ -4,8 +4,8 @@ import re
 import time
 import subprocess
 import msvcrt
-import win32api
-import win32con
+import win32api # pyright: ignore[reportMissingModuleSource]
+import win32con # pyright: ignore[reportMissingModuleSource]
 try:
     import win32com.client  # pywin32
     import win32clipboard # pyright: ignore[reportMissingModuleSource]
