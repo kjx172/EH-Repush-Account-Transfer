@@ -1,22 +1,20 @@
-# file: send_to_rep_system.py
-
+# file: repush.py
 import sys
 import re
 import time
 import subprocess
 import msvcrt
-import win32api  # pyright: ignore[reportMissingModuleSource]
-
+import win32api
+import win32con
 try:
     import win32com.client  # pywin32
     import win32clipboard # pyright: ignore[reportMissingModuleSource]
-    import win32con # pyright: ignore[reportMissingModuleSource]
     from pywintypes import com_error # pyright: ignore[reportMissingModuleSource]
-except Exception as ex:
+except Exception:
     print("Missing dependency. Ensure you're on Windows and run: pip install pywin32")
     raise
 
-# ---------- Helpers ----------
+# ---------- HELPERS ----------
 
 def normalize_numbers(raw_text: str) -> list:
     """
@@ -30,49 +28,33 @@ def normalize_numbers(raw_text: str) -> list:
     return tokens
 
 def set_clipboard_text(text: str) -> None:
-    """Set Windows clipboard text. Falls back to `clip` if needed."""
+    """Put text onto the Windows clipboard; fallback to 'clip'."""
     try:
         win32clipboard.OpenClipboard()
         win32clipboard.EmptyClipboard()
         win32clipboard.SetClipboardText(text)
         win32clipboard.CloseClipboard()
     except Exception:
-        # Fallback using Windows 'clip' command
         subprocess.run("clip", input=text, text=True, shell=True, check=True)
 
 def get_sap_session():
-    """
-    Get the first active SAP GUI session from the first connection.
-    Adjust indices if you use multiple connections or sessions.
-    """
+    """Return the first session of the first connection (adjust indices if needed)."""
     try:
         sapgui = win32com.client.GetObject("SAPGUI")
     except Exception:
-        raise RuntimeError("SAP GUI is not running or Scripting is disabled on the client.")
+        raise RuntimeError("SAP GUI is not running or scripting is disabled.")
     try:
-        application = sapgui.GetScriptingEngine
-        if application is None or application.Children.Count == 0:
-            raise RuntimeError("No SAP GUI connections found. Log on and try again.")
-        connection = application.Children(0)
-        if connection.Children.Count == 0:
+        app = sapgui.GetScriptingEngine
+        if app is None or app.Children.Count == 0:
+            raise RuntimeError("No SAP GUI connections found.")
+        conn = app.Children(0)
+        if conn.Children.Count == 0:
             raise RuntimeError("No active SAP sessions found in the first connection.")
-        session = connection.Children(0)
-        return session
+        return conn.Children(0)
     except com_error as ce:
-        raise RuntimeError("Unable to access SAP Scripting engine (check server + client settings).") from ce
+        raise RuntimeError("Unable to access SAP Scripting engine (server/client).") from ce
 
-def _wait_until_ready(session, timeout=10.0, poll=0.1):
-    """Wait until modal dialog (wnd[1]) is gone and allow a short settle."""
-    t0 = time.time()
-    while time.time() - t0 < timeout:
-        try:
-            session.findById("wnd[1]")  # modal still present
-            time.sleep(poll)
-            continue
-        except Exception:
-            time.sleep(poll)  # short settle after modal closes
-            return True
-    return False
+# ---------- UTILS ----------
 
 def read_numbers_interactive() -> list[str]:
     """
@@ -86,7 +68,7 @@ def read_numbers_interactive() -> list[str]:
     print("-" * 60)
 
     lines: list[str] = []
-    current = []
+    current: list[str] = []
 
     def flush_line():
         nonlocal current
@@ -133,105 +115,101 @@ def read_numbers_interactive() -> list[str]:
 
     return normalize_numbers("\n".join(lines))
 
-def is_no_rows_error(ex: Exception) -> bool:
-    """
-    Detect SAP GUI 'control not found' error that usually indicates
-    no ALV grid / no eligible rows to process.
-    """
-    msg = str(ex)
-    return (
-        "The control could not be found by id" in msg
-        or "findById" in msg and "not found" in msg
-    )
+DOC_FLOW = {
+    # Orders: uncheck Billing + Customer; check Last Attempt; open SO_VBELN
+    "order": {
+        "checkboxes": [
+            ("wnd[0]/usr/chkP_BD",   False),  # Billing docs OFF
+            ("wnd[0]/usr/chkP_CUS",  False),  # Customer/contacts OFF
+            ("wnd[0]/usr/chkPA_LAST", True),  # Last Attempt ON
+        ],
+        "multi_select_btn": "wnd[0]/usr/btn%_SO_VBELN_%_APP_%-VALU_PUSH",
+    },
+    # Invoices: uncheck Sales + Customer; check Last Attempt; open SO_BD
+    "invoice": {
+        "checkboxes": [
+            ("wnd[0]/usr/chkP_SD",   False),  # Sales OFF
+            ("wnd[0]/usr/chkP_CUS",  False),  # Customer/contacts OFF
+            ("wnd[0]/usr/chkPA_LAST", True),  # Last Attempt ON
+        ],
+        "multi_select_btn": "wnd[0]/usr/btn%_SO_BD_%_APP_%-VALU_PUSH",
+    },
+}
 
-# ---------- Core automation ----------
+def open_tx_and_apply_criteria(session, doc_type: str, numbers: list[str]):
+    """Go to ZREP_INTEGR_MONI, set relevant checkboxes, and paste numbers."""
+    cfg = DOC_FLOW[doc_type]
 
-def run_flow(session, so_numbers: list[str]):
-    # 1) Copy numbers to clipboard with newline separation (best for SAP multi-select paste)
-    set_clipboard_text("\r\n".join(so_numbers))
+    # Put numbers on clipboard (newline-separated works best in SAP multi-select)
+    set_clipboard_text("\r\n".join(numbers))
 
-    # 2) Go to transaction
+    # Transaction
     session.findById("wnd[0]/tbar[0]/okcd").text = "ZREP_INTEGR_MONI"
     session.findById("wnd[0]").sendVKey(0)  # Enter
 
-    # 3) Set checkboxes as requested
-    #    - Uncheck Billing Documents (chkP_BD)
-    #    - Uncheck Customer/Contacts (chkP_CUS)
-    #    - Check Last Attempt Only (chkPA_LAST)
-    for elt in (
-        ("wnd[0]/usr/chkP_BD", False),
-        ("wnd[0]/usr/chkP_CUS", False),
-        ("wnd[0]/usr/chkPA_LAST", True),
-    ):
-        obj_id, should_select = elt
+    # Checkboxes
+    for obj_id, selected in cfg["checkboxes"]:
         ctrl = session.findById(obj_id)
         ctrl.setFocus()
-        ctrl.selected = bool(should_select)
+        ctrl.selected = bool(selected)
 
-    # 4) Open Multiple Selection for SO (VBELN)
-    session.findById("wnd[0]/usr/btn%_SO_VBELN_%_APP_%-VALU_PUSH").press()
+    # Multiple selection popup for the correct field
+    session.findById(cfg["multi_select_btn"]).press()
+    session.findById("wnd[1]/tbar[0]/btn[24]").press()  # Paste from clipboard
+    session.findById("wnd[1]/tbar[0]/btn[8]").press()   # OK
 
-    # 5) In the popup:
-    # btn[24] = "Paste from Clipboard"
-    # btn[8]  = "OK"
-    session.findById("wnd[1]/tbar[0]/btn[24]").press()
-    session.findById("wnd[1]/tbar[0]/btn[8]").press()
-
-    # Ensure popup is closed and main window is ready
-    _wait_until_ready(session)
+def execute_and_finish(session):
+    """Execute and send to rep system (Select ALL rows)."""
+    # Execute (F8)
+    session.findById("wnd[0]/tbar[1]/btn[8]").press()
 
     try:
-        # Execute (F8)
-        session.findById("wnd[0]").sendVKey(8)
+        # Use your new flow
+        session.findById("wnd[0]").resizeWorkingPane(155, 43, False)
 
-        # Try to load ALV grid
-        grid_id = "wnd[0]/usr/cntlCC1/shellcont/shell/shellcont[1]/shell/shellcont[0]/shell"
-        grid = None
-        for _ in range(50):
-            try:
-                grid = session.findById(grid_id)
-                break
-            except Exception:
-                time.sleep(0.1)
+        grid_id = (
+            "wnd[0]/usr/cntlCC1/shellcont/shell/"
+            "shellcont[1]/shell/shellcont[0]/shell"
+        )
+        grid = session.findById(grid_id)
 
-        if grid is None:
-            raise RuntimeError("No results grid — no eligible rows to repush.")
+        # Clear active cell and select all rows
+        grid.setCurrentCell(-1, "")
+        grid.selectAll()
 
-        # Select row and send
-        grid.selectedRows = "0"
+        # Send to Rep System
         grid.pressToolbarButton("SEND_PO")
 
-    except Exception as ex:
-        if is_no_rows_error(ex):
-            print("No eligible rows to repush.")
-            return
-        else:
-            raise
+    except Exception:
+        # Grid wasn't found after Execute → no results/no screen change
+        print("⚠️  No grid detected after Execute — No successful repushes")
 
-def main():
-    # --- replace the input-gathering block in main() ---
-    print("-" * 60)
+# ---------- MAIN ----------
+def run_flow(doc_type: str):
+    """
+    Continuously collect numbers interactively and execute the flow for each batch.
+    Stops when the user submits an empty batch (i.e., immediately Ctrl+Enter) or answers 'n' at the prompt.
+    """
+    if doc_type not in DOC_FLOW:
+        raise ValueError(f"Unsupported doc_type: {doc_type}. Use 'order' or 'invoice'.")
 
-    if sys.stdin.isatty():
-        so_numbers = read_numbers_interactive()
-    else:
-        # still support piped input or redirected files
-        raw = sys.stdin.read()
-        so_numbers = normalize_numbers(raw)
+    while True:
+        print(f"\n=== Repush {doc_type} Batch ===")
+        try:
+            numbers = read_numbers_interactive()
+        except KeyboardInterrupt:
+            print("\nCancelled by user (Ctrl+C). Exiting.")
+            break
 
-    if not so_numbers:
-        print("No usable order numbers were provided. Exiting.")
-        sys.exit(1)
+        if not numbers:
+            print("No numbers entered. Exiting batch loop.")
+            break
 
-    print(f"Parsed {len(so_numbers)} entries. Copying to clipboard and automating SAP...")
-
-    try:
         session = get_sap_session()
-        run_flow(session, so_numbers)
-        print("Done. If there were qualifying rows, 'Send to Rep System' was triggered.")
-    except Exception as ex:
-        print(f"[ERROR] {ex}")
-        sys.exit(2)
+        
+        # Run the shared flow for this batch
+        open_tx_and_apply_criteria(session, doc_type, numbers)
+        execute_and_finish(session)
+        print(f"\n=== Repush {doc_type} Batch Complete ===")
 
-if __name__ == "__main__":
-    main()
+        return
