@@ -5,13 +5,13 @@ import re
 import time
 import subprocess
 import msvcrt
-import win32api  # from pywin32
+import win32api  # pyright: ignore[reportMissingModuleSource]
 
 try:
     import win32com.client  # pywin32
-    import win32clipboard
-    import win32con
-    from pywintypes import com_error
+    import win32clipboard # pyright: ignore[reportMissingModuleSource]
+    import win32con # pyright: ignore[reportMissingModuleSource]
+    from pywintypes import com_error # pyright: ignore[reportMissingModuleSource]
 except Exception as ex:
     print("Missing dependency. Ensure you're on Windows and run: pip install pywin32")
     raise
