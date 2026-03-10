@@ -3,12 +3,14 @@ import sys
 from typing import Callable
 import os
 from repush import run_flow as cmd_repush
+from sa38 import run_flow as cmd_account_transfer
 
 
 # Menu options
 MENU = {
     "1": ("Repush Orders",   lambda: cmd_repush("order")),
     "2": ("Repush Invoices", lambda: cmd_repush("invoice")),
+    "3": ("Mass Account Transfer", cmd_account_transfer),
     "q": ("Quit",            lambda: sys.exit(0)),
 }
 

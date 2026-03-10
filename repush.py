@@ -210,6 +210,6 @@ def run_flow(doc_type: str):
         # Run the shared flow for this batch
         open_tx_and_apply_criteria(session, doc_type, numbers)
         execute_and_finish(session)
-        print(f"\n=== Repush {doc_type} Batch Complete ===")
+        print(f"\n✅  === Repush {doc_type} Batch Complete ===")
 
         return
