@@ -6,13 +6,14 @@ from repush import run_flow as cmd_repush
 from acct_transfer import run_flow as cmd_account_transfer
 from asp_offboarding import run_flow as cmd_asp_offboarding
 from ise_ose import run as cmd_ise_ose_offboarding
+from mk02_open_vendor import run as cmd_vendor_record
 
 
 # Menu options
 MENU = {
     "1": ("ASP Table Assignment", cmd_asp_offboarding),
     "2": ("ISE/OSE Table assignment", cmd_ise_ose_offboarding),
-    "3": ("OSE Vendor Recod", cmd_account_transfer),
+    "3": ("OSE Vendor Record", cmd_vendor_record),
     "4": ("Mass Account Transfer", cmd_account_transfer),
     #"4": ("Repush Orders",   lambda: cmd_repush("order")),
     #"5": ("Repush Invoices", lambda: cmd_repush("invoice")),
