@@ -1,0 +1,157 @@
+zendesk:
+  employee_name_field_id: '23046932'
+  start_date_field_id: '21990975'
+  employee_region_field_id: '27130937031437'
+  i_number_field_id: '23786523'
+  e_number_field_id: '23179866'
+  ve_number_field_id: '23048731'
+
+  email_internal_field_id: '24593766'
+  email_rep_field_id: '23020076'
+  company_address_rep_field_id: '23019996'
+  phone_field_id: '23041513'
+
+  onboarding_internal_flag_field_id: '22290409'
+  onboarding_rep_flag_field_id: '23041433'
+
+  rep_company_field_id: '22233507049613'
+  salesforce_alias_field_id: '8480841285389'
+
+
+
+sap_defaults:
+  personnel_area: '4600'
+  ee_group: '01'
+
+  # Which EE subgroup to use: internal/ASP or external
+  ee_subgroup_internal_ASP: '20'
+  ee_subgroup_OSE: '01'
+
+  # Sales office routing based on region tag value
+  sales_office_by_region:
+    nerc_loc: '4604'
+    gulf_loc: '4602'
+    mwrc_loc: '4603'
+
+  # Fallback if region doesn't match above
+  sales_office_default: '4603'
+
+  # Address routing based on region tag value
+  address_by_region:
+    nerc_loc: '500 Horizon Drive Chalfont, PA 18914'
+    gulf_loc: '14525 Kirby Drive Pearland, TX 77047'
+    mwrc_loc: '2350 Endress Place Greenwood, IN 46143'
+
+  sales_office_by_rep_company:
+    # Midwest (4603)
+    geb: '4603'
+    mms: '4603'
+    forberg: '4603'
+
+    # East (4604)
+    eci: '4604'
+    carotek_: '4604'
+    # trinova: '4604'      # TRI North doesn't exist?
+
+    # Gulf (4602)
+    vector: '4602'
+    trinova: '4602'
+
+    # West (4601)
+    ic: '4601'
+    rust: '4601'
+    fic: '4601'
+
+  addr_default: '2350 Endress Place Greenwood, IN 46143'
+
+  work_schedule_rule: 'XX_NO'
+  daily_hours: 8
+  weekly_days: 5
+
+  rep_company_map:
+    carotek_: "Carotek Inc."
+    eci: "Eastern Controls, Inc."
+    eeca: "Engineered Equipment Co of Alaska"
+    fic: "Field Instruments & Controls"
+    forberg: "Forberg Scientific"
+    geb: "G.E. Booth"
+    ic: "Instrument and Controls"
+    mms: "Miller Mechanical"
+    ppe: "Precision Pipeline Equipment"
+    rust: "Rust Automation"
+    trinova: "TriNova Inc."
+    vector: "Vector Controls LLC"
+    otherrep: "Other"
+
+  rep_table_key_map:
+    carotek_: "CAROTEK"
+    eci: "ECI"
+    eeca: "ENGALASKA"
+    fic: "FIELDINSTR"
+    forberg: "FORBERG"
+    geb: "GEBOOTH"
+    ic: "IAC"
+    mms: "MILLER"
+    ppe: "N/A"
+    rust: "RUST"
+    trinova: "TRINOVA"
+    vector: "VECTOR"
+    otherrep: "Other"
+
+  rep_integration_map:
+    carotek_: "CAROTEK_US"
+    eci: "ECI_US"
+    fic: "FIC_US"
+    forberg: "FORBERG_US"
+    geb: "GEBOOTH_US"
+    ic: "INSTRUMENTATIONANDCONTROLS_US"
+    mms: "MILLERMECHANICALSPECIALTIES_US"
+    rust: "RAC_US"
+    trinova: "TRINOVA_US"
+    vector: "VECTOR_US"
+    otherrep: "Other"
+
+  workcenter_storage_by_rep_company:
+    # TriNova (split)
+    trinova_north:
+      work_center: "4600_21"
+      storage_location: "0061"
+    trinova_south:
+      work_center: "4600_31"
+      storage_location: "0060"
+
+    eci:
+      work_center: "4600_21"
+      storage_location: "0061"
+    vector:
+      work_center: "4600_51"
+      storage_location: "0062"
+    forberg:
+      work_center: "4600_41"
+      storage_location: "0059"
+    geb:
+      work_center: "4600_41"
+      storage_location: "0059"
+    mms:
+      work_center: "4600_41"
+      storage_location: "0059"
+    carotek_:
+      work_center: "4600_31"
+      storage_location: "0060"
+    rust:
+      work_center: "4600_61"
+      storage_location: "0061"
+    ic:        # Instrument and Controls (IAC)
+      work_center: "4600_61"
+      storage_location: "0061"
+    fic:
+      work_center: "4600_61"
+      storage_location: "0061"
+    eeca:      # EEAK (Alaska)
+      work_center: "4600_61"
+      storage_location: "0061"
+
+    # placeholder/fallback for others
+    otherrep:
+      work_center: "4600_41"
+      storage_location: "0059"
