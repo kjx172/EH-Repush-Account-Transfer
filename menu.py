@@ -15,15 +15,15 @@ MENU = {
     "2": ("ISE/OSE Table assignment", cmd_ise_ose_offboarding),
     "3": ("OSE Vendor Record", cmd_vendor_record),
     "4": ("Mass Account Transfer", cmd_account_transfer),
-    #"4": ("Repush Orders",   lambda: cmd_repush("order")),
-    #"5": ("Repush Invoices", lambda: cmd_repush("invoice")),
+    "5": ("Repush Orders",   lambda: cmd_repush("order")),
+    "6": ("Repush Invoices", lambda: cmd_repush("invoice")),
     "q": ("Quit",            lambda: sys.exit(0)),
 }
 
 
 def main() -> None:
     while True:
-        print('\n==== Additional SAP Utilities ====' )
+        print('\n==== Offboarding SAP Utilities ====' )
         for key, (label, _) in MENU.items():
             print(f" {key}) {label}")
         choice = input('Select an option: ').strip().lower()
