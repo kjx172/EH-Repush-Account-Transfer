@@ -23,7 +23,7 @@ MENU = {
 
 def main() -> None:
     while True:
-        print('\n==== Offboarding SAP Utilities ====' )
+        print('\n==== Offboarding SAP Utilities ==== v1.0.1' )
         for key, (label, _) in MENU.items():
             print(f" {key}) {label}")
         choice = input('Select an option: ').strip().lower()

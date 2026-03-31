@@ -38,7 +38,7 @@ sap_defaults:
 
   # Address routing based on region tag value
   address_by_region:
-    nerc_loc: '500 Horizon Drive Chalfont, PA 18914'
+    nerc_loc: '3850 Providence Rd Newtown Square, PA 19073'
     gulf_loc: '14525 Kirby Drive Pearland, TX 77047'
     mwrc_loc: '2350 Endress Place Greenwood, IN 46143'
 
