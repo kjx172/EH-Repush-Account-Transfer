@@ -60,40 +60,39 @@ def read_numbers_interactive() -> list[str]:
     """
     Interactive input:
       - Press Enter to commit the current line and continue
-      - Press Ctrl+Enter to finish input
+      - Type DONE and press Enter to finish input
       - Supports pasting multiple lines
     """
     print("Enter order numbers (one per line).")
-    print("Press Ctrl+Enter when DONE.")
+    print("Type DONE and press Enter when DONE.")
     print("-" * 60)
 
     lines: list[str] = []
     current: list[str] = []
 
-    def flush_line():
+    def flush_line() -> str:
         nonlocal current
-        lines.append("".join(current))
+        line = "".join(current)
+        lines.append(line)
         current = []
+        return line
 
     while True:
-        ch = msvcrt.getwch()  # wide-char read, no echo by default
+        ch = msvcrt.getwch()  # wide-char read
 
-        if ch == "\r":  # Enter pressed
-            # check modifier keys at the moment of Enter
-            ctrl_down = win32api.GetKeyState(win32con.VK_CONTROL) < 0
+        # Treat both CR and LF as "Enter" equivalents depending on host
+        if ch in ("\r", "\n"):
+            line = flush_line()
+            print()  # echo newline
 
-            if ctrl_down:
-                # finish: commit any partially typed content first (if non-empty)
-                if current:
-                    flush_line()
-                print()  # move to next console line
+            # Finish when user types DONE (case-insensitive) on its own line
+            if line.strip().upper() == "DONE":
+                lines.pop()  # remove sentinel from payload
                 break
-            else:
-                flush_line()
-                print()  # echo newline
-                continue
 
-        elif ch in ("\x08",):  # Backspace
+            continue
+
+        elif ch == "\x08":  # Backspace
             if current:
                 current.pop()
                 # move cursor back, erase last char visually
@@ -104,11 +103,13 @@ def read_numbers_interactive() -> list[str]:
             raise KeyboardInterrupt
 
         else:
-            # Regular character (including pasted content). Handle '\n' from paste explicitly.
+            # Pasted content may include embedded newlines; handle those as line breaks.
             if ch == "\n":
-                # Treat newline from paste as Enter (continue)
-                flush_line()
+                line = flush_line()
                 print()
+                if line.strip().upper() == "DONE":
+                    lines.pop()
+                    break
             else:
                 current.append(ch)
                 print(ch, end="", flush=True)
